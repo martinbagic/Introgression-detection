@@ -70,7 +70,7 @@ Different modes (you can also see the options for each by writing hmmix make_tes
     -window_size        size of bins (defaults to 1 Mb)
 
 > create_outgroup       
-    -ind                [required] ingroup/outgrop list (json file) or comma-separated list e.g. ind1,ind2
+    -ind                [required] ingroup/outgroup list (json file) or comma-separated list e.g. ind1,ind2
     -vcf                [required] path to list of comma-separated vcf/bcf file(s) or wildcard characters e.g. chr*.bcf
     -weights            file with callability (defaults to all positions being called)
     -out                outputfile (defaults to stdout)
@@ -78,11 +78,11 @@ Different modes (you can also see the options for each by writing hmmix make_tes
     -refgenome          fasta file with reference genome - comma-separated list or wildcards like vcf argument (default none)
 
 > create_ingroup        
-    -ind                [required] ingroup/outgrop list (json file) or comma-separated list e.g. ind1,ind2
+    -ind                [required] ingroup/outgroup list (json file) or comma-separated list e.g. ind1,ind2
     -vcf                [required] path to list of comma-separated vcf/bcf file(s) or wildcard characters e.g. chr*.bcf
     -outgroup           [required] path to variant found in outgroup
     -weights            file with callability (defaults to all positions being called)
-    -out                outputfile prefix (default is a file named obs.<ind>.txt where ind is the name of individual in ingroup/outgrop list)
+    -out                outputfile prefix (default is a file named obs.<ind>.txt where ind is the name of individual in ingroup/outgroup list)
     -ancestral          fasta file with ancestral information - comma-separated list or wildcards like vcf argument (default none)
 
 > train                 
@@ -170,7 +170,7 @@ Initialguesses.json. This is our initial guesses when training the model - note 
 }
 ```
 
-We can find the best fitting parameters using BaumWelsch training. Here is how you use it: - note you can try to ommit the weights and mutrates arguments. Since this is simulated data the mutation is constant across the genome and we can asses the entire genome. Also notice how the parameters approach the parameters the data was generated from (jubii).
+We can find the best fitting parameters using Baum–Welch training. Here is how you use it: - note you can try to ommit the weights and mutrates arguments. Since this is simulated data the mutation is constant across the genome and we can asses the entire genome. Also notice how the parameters approach the parameters the data was generated from (jubii).
 
 ```note
 > hmmix train  -obs=obs.txt -weights=weights.bed -mutrates=mutrates.bed -param=Initialguesses.json -out=trained.json
@@ -237,24 +237,20 @@ chr2   41088000  41178000  91000     Archaic  0.96092    43
 chr2   41179000  49952000  8774000   Human    0.99789    328
 chr2   49953000  49977000  25000     Archaic  0.98501    13
 
-# Again here you could ommit weights and mutationrates. Actually one could also ommit trained.json because then the model defaults to using the parameters we used the generated the data
+# Again here you could ommit weights and mutationrates. Actually one could also omit trained.json because then the model defaults to using the parameters we used the generated the data
 > hmmix decode -obs=obs.txt
 ```
 
----
-
 ## Example with 1000 genomes data
-
----
 
 The whole pipeline we will run looks like this. In the following section we will go through all the steps on the way
 
 ```note
-hmmix create_outgroup -ind=individuals.json -vcf=*.bcf -weights=strickmask.bed -out=outgroup.txt -ancestral=homo_sapiens_ancestor_GRCh37_e71/homo_sapiens_ancestor_*.fa -refgenome=referencegenome/*fa
-hmmix mutation_rate -outgroup=outgroup.txt  -weights=strickmask.bed -window_size=1000000 -out mutationrate.bed
-hmmix create_ingroup  -ind=individuals.json -vcf=*.bcf -weights=strickmask.bed -out=obs -outgroup=outgroup.txt -ancestral=homo_sapiens_ancestor_GRCh37_e71/homo_sapiens_ancestor_*.fa
-hmmix train  -obs=obs.HG00096.txt -weights=strickmask.bed -mutrates=mutationrate.bed -out=trained.HG00096.json 
-hmmix decode -obs=obs.HG00096.txt -weights=strickmask.bed -mutrates=mutationrate.bed -param=trained.HG00096.json 
+hmmix create_outgroup -ind=individuals.json -vcf=*.bcf -weights=strictmask.bed -out=outgroup.txt -ancestral=homo_sapiens_ancestor_GRCh37_e71/homo_sapiens_ancestor_*.fa -refgenome=referencegenome/*fa
+hmmix mutation_rate -outgroup=outgroup.txt  -weights=strictmask.bed -window_size=1000000 -out mutationrate.bed
+hmmix create_ingroup  -ind=individuals.json -vcf=*.bcf -weights=strictmask.bed -out=obs -outgroup=outgroup.txt -ancestral=homo_sapiens_ancestor_GRCh37_e71/homo_sapiens_ancestor_*.fa
+hmmix train  -obs=obs.HG00096.txt -weights=strictmask.bed -mutrates=mutationrate.bed -out=trained.HG00096.json 
+hmmix decode -obs=obs.HG00096.txt -weights=strictmask.bed -mutrates=mutationrate.bed -param=trained.HG00096.json 
 ```
 
 ### Getting data
@@ -273,26 +269,41 @@ To download callability regions, ancestral alleles information, ingroup outgroup
 
 ```bash
 # bcffiles (hg19)
+# BCF files of the current phase 3 release (with individuals HG0096, ..., NA21135)
+# last modified 2014-10-31
+# README: http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/bcf_files/README_20141031_bcf_files
 ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/bcf_files/
 
 # callability (remember to remove chr in the beginning of each line to make it compatible with hg19 e.g. chr1 > 1)
+# BED file with high-callability regions
+# README: http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/README.accessible_genome_mask.20140520
 ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed
 sed 's/^chr\|%$//g' 20141020.strict_mask.whole_genome.bed | awk '{print $1"\t"$2"\t"$3}' > strickmask.bed
 
 # outgroup information
-ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/integrated_call_samples_v3.20130502.ALL.panel
+# 
+# README: http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/README_phase3_callset_20150220
+# Columns are `sample` (HG00096, HG00097, ...), `pop` (GBR, FIN, ...), `super_pop` (EUR, ...) and `gender` (male/female)
+ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/integrated_call_samples_v3.20130502.ALL.panel
 
 # Ancestral information
-ftp://ftp.ensembl.org/pub/release-74/fasta/ancestral_alleles/homo_sapiens_ancestor_GRCh37_e71.tar.bz2
+# README: http://ftp.ensembl.org/pub/release-74/fasta/ancestral_alleles/homo_sapiens_ancestor_GRCh37_e71.README
+# Contains homo_sapiens_ancestor_($chromosome).(fa|bed)
+# An example line from the file homo_sapiens_ancestor_12.bed
+#     12	6120931	6132925	((((((Ggor,Ggor),(Hsap,Hsap.1)),(Hsap,Ptro)),Pabe),Mmul),Cjac);
+ftp.ensembl.org/pub/release-74/fasta/ancestral_alleles/homo_sapiens_ancestor_GRCh37_e71.tar.bz2
 
 # Reference genome
+# README: http://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/
+# "The assembly sequence in one file per chromosome."
+# 905 MB
 wget 'ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/chromFa.tar.gz' -O chromFa.tar.gz
 
 # Archaic variants (Altai, Vindija, Chagyrskaya and Denisova in hg19)
 https://zenodo.org/record/7246376#.Y1cRBkrMJH4
 ```
 
-For this example we will use all individuals from 'YRI','MSL' and 'ESN' as outgroup individuals. While we will only be decoding hG00096 in this example you can add as many individuals as you want to the ingroup.  
+For this example we will use all individuals from 'YRI', 'MSL' and 'ESN' as outgroup individuals. While we will only be decoding HG00096 in this example, you can add as many individuals as you want to the ingroup.  
 
 ```json
 {
@@ -309,25 +320,23 @@ For this example we will use all individuals from 'YRI','MSL' and 'ESN' as outgr
 }
 ```
 
----
+### Finding SNPs which are derived in the outgroup
 
-### Finding snps which are derived in the outgroup
-
-First we need to find a set of variants found in the outgroup. We can use the wildcard character to loop through all bcf files. If you dont have ancestral information you can skip the ancestral argument.
+First we need to find a set of variants found in the outgroup. We can use the wildcard character to loop through all bcf files. If you don't have ancestral information, you can skip the ancestral argument.
 
 ```bash
-(took an hour) > hmmix create_outgroup -ind=individuals.json -vcf=*.bcf -weights=strickmask.bed -out=outgroup.txt -ancestral=homo_sapiens_ancestor_GRCh37_e71/homo_sapiens_ancestor_*.fa
+(took an hour) > hmmix create_outgroup -ind=individuals.json -vcf=*.bcf -weights=strictmask.bed -out=outgroup.txt -ancestral=homo_sapiens_ancestor_GRCh37_e71/homo_sapiens_ancestor_*.fa
 
 # Alternative usage (if you only have a few individual in the outgroup you can also provide a comma separated list)
-> hmmix create_outgroup -ind=HG02922,HG02923,HG02938 -vcf=*.bcf -weights=strickmask.bed -out=outgroup.txt -ancestral=homo_sapiens_ancestor_GRCh37_e71/homo_sapiens_ancestor_*.fa
+> hmmix create_outgroup -ind=HG02922,HG02923,HG02938 -vcf=*.bcf -weights=strictmask.bed -out=outgroup.txt -ancestral=homo_sapiens_ancestor_GRCh37_e71/homo_sapiens_ancestor_*.fa
 
 # Alternative usage (if you have no ancestral information)
-> hmmix create_outgroup -ind=individuals.json -vcf=*.bcf -weights=strickmask.bed -out=outgroup.txt 
+> hmmix create_outgroup -ind=individuals.json -vcf=*.bcf -weights=strictmask.bed -out=outgroup.txt 
 
 # Alternative usage (if you only want to run the model on a subset of chromosomes, with or without ancestral information)
-> hmmix create_outgroup -ind=individuals.json -vcf=chr1.bcf,chr2.bcf -weights=strickmask.bed -out=outgroup.txt
+> hmmix create_outgroup -ind=individuals.json -vcf=chr1.bcf,chr2.bcf -weights=strictmask.bed -out=outgroup.txt
 
-> hmmix create_outgroup -ind=individuals.json -vcf=chr1.bcf,chr2.bcf -weights=strickmask.bed -out=outgroup.txt -ancestral=homo_sapiens_ancestor_GRCh37_e71/homo_sapiens_ancestor_1.fa,homo_sapiens_ancestor_GRCh37_e71/homo_sapiens_ancestor_2.fa
+> hmmix create_outgroup -ind=individuals.json -vcf=chr1.bcf,chr2.bcf -weights=strictmask.bed -out=outgroup.txt -ancestral=homo_sapiens_ancestor_GRCh37_e71/homo_sapiens_ancestor_1.fa,homo_sapiens_ancestor_GRCh37_e71/homo_sapiens_ancestor_2.fa
 ```
 
 Something to note is that if you use an outgroup vcffile (like 1000 genomes) and an ingroup vcf file from a different dataset (like SGDP) there is an edge case which could occur. There could be recurrent mutations where every individual in 1000 genome has the derived variant and one individual in SGDP where the derived variant has mutated back to the ancestral allele. This means that this position will not be present in the outgroup file. However if a recurrent mutation occurs it will look like multiple individuals in the ingroup file have the mutation. This does not happen often but just in case you can create the outgroup file and adding the sites which are fixed derived in all individuals using the reference genome:
@@ -336,8 +345,6 @@ Something to note is that if you use an outgroup vcffile (like 1000 genomes) and
 # Alternative usage (if you want to remove sites which are fixed derived in your outgroup/ingroup)
 > hmmix create_outgroup -ind=individuals.json -vcf=*.bcf -weights=strickmask.bed -out=outgroup.txt -ancestral=homo_sapiens_ancestor_GRCh37_e71/homo_sapiens_ancestor_*.fa -refgenome=*fa
 ```
-
----
 
 ### Estimating mutation rate across genome
 
@@ -352,8 +359,6 @@ We can use the number of variants in the outgroup to estimate the substitution r
 > Window size: 1000000
 ----------------------------------------
 ```
-
----
 
 ### Find a set of variants which are not derived in the outgroup
 
